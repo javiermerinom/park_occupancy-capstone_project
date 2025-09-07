@@ -1,0 +1,44 @@
+Average % Difference = 
+VAR Result =
+    ROUND (
+        AVERAGEX (
+            FILTER (
+                ADDCOLUMNS (
+                    GENERATE (
+                        VALUES ( fact_popular_times[PlaceID] ),
+                        VALUES ( fact_popular_times[DateTime] )
+                    ),
+                    "LiveValue", CALCULATE (
+                        MAX ( fact_live_times[PopularTimesLivePercent] ),
+                        FILTER (
+                            fact_live_times,
+                            fact_live_times[PlaceID] = EARLIER ( fact_popular_times[PlaceID] ) &&
+                            fact_live_times[DateTime] = EARLIER ( fact_popular_times[DateTime] )
+                        )
+                    ),
+                    "UsualValue", CALCULATE (
+                        MAX ( fact_popular_times[PopularTimesPercent] ),
+                        FILTER (
+                            fact_popular_times,
+                            fact_popular_times[PlaceID] = EARLIER ( fact_popular_times[PlaceID] ) &&
+                            fact_popular_times[DateTime] = EARLIER ( fact_popular_times[DateTime] )
+                        )
+                    )
+                ),
+                NOT ISBLANK ( [LiveValue] ) && NOT ISBLANK ( [UsualValue] )
+            ),
+            DIVIDE ( [LiveValue] - [UsualValue], [UsualValue] )
+        ) * 100,
+    1
+)
+
+VAR Icon =
+    SWITCH (
+        TRUE(),
+        Result > 0, " 🔺",
+        Result < 0, " 🔻",
+        " ➡️"
+    )
+
+RETURN
+FORMAT(Result, "0.0") & "%" & Icon

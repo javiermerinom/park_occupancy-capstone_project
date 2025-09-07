@@ -1,0 +1,2 @@
+Today Date = 
+"Today is " & FORMAT(TODAY(), "dddd, mmmm dd, yyyy")

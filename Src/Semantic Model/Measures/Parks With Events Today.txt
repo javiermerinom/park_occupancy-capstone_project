@@ -1,0 +1,11 @@
+Parks With Events Today = 
+VAR TodayDate = TODAY()
+RETURN
+COALESCE(
+    CALCULATE(
+        DISTINCTCOUNT('dim_events'[EventKey]),
+        DATEVALUE('dim_events'[StartTime]) <= TodayDate &&
+        DATEVALUE('dim_events'[EndTime]) >= TodayDate
+    ),
+    0
+)

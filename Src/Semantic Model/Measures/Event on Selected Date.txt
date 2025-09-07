@@ -1,0 +1,27 @@
+Event on Selected Date = 
+VAR SelectedDate = SELECTEDVALUE('dim_date'[Date])
+VAR SelectedPark = SELECTEDVALUE('dim_park_attributes'[ParkName])
+
+VAR MatchingEvents =
+    FILTER(
+        'dim_events',
+        'dim_events'[ParkName] = SelectedPark &&
+        DATEVALUE('dim_events'[StartTime]) <= SelectedDate &&
+        DATEVALUE('dim_events'[EndTime]) >= SelectedDate
+    )
+
+VAR EventNames =
+    CALCULATETABLE(
+        VALUES('dim_events'[EventName]),
+        MatchingEvents
+    )
+
+VAR ConcatenatedEvents =
+    CONCATENATEX(EventNames, 'dim_events'[EventName], ", ")
+
+RETURN
+    IF(
+        ISBLANK(ConcatenatedEvents),
+        "None",
+        ConcatenatedEvents
+    )

@@ -1,0 +1,52 @@
+Filtered Usual Peak Usage = 
+VAR FilteredTable =
+    ADDCOLUMNS (
+        VALUES ( fact_popular_times[Hour] ),
+        "AvgOcc", CALCULATE (
+            AVERAGE ( fact_popular_times[PopularTimesPercent] ),
+            FILTER (
+                dim_park_amenities_wide,
+                (
+                    "Volleyball" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[Volleyball] > 0 ||
+                    "Cricket" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[Cricket] > 0 ||
+                    "Tennis" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[Tennis] > 0 ||
+                    "Skateboard" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[Skateboard] > 0 ||
+                    "RunningTrack" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[RunningTrack] > 0 ||
+                    "BMX" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[BMX] > 0 ||
+                    "Pickleball" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[Pickleball] > 0 ||
+                    "Parkour" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[Parkour] > 0 ||
+                    "MultiUseSportCourt" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[MultiUseSportCourt] > 0 ||
+                    "Lacrosse" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[Lacrosse] > 0 ||
+                    "DiscGolf" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[DiscGolf] > 0 ||
+                    "Basketball" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[Basketball] > 0 ||
+                    "Playground" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[Playground] > 0 ||
+                    "SprayPark" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[SprayPark] > 0 ||
+                    "CommunityGarden" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[CommunityGarden] > 0 ||
+                    "OLA" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[OLA] > 0 ||
+                    "Synturf" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[Synturf] > 0 ||
+                    "ClassA1" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[ClassA1] > 0 ||
+                    "ClassB1" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[ClassB1] > 0 ||
+                    "ClassB2" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[ClassB2] > 0 ||
+                    "ClassC" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[ClassC] > 0 ||
+                    "BallHockey" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[BallHockey] > 0 ||
+                    "BaseballDiamond" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[BaseballDiamond] > 0 ||
+                    "Washroom" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[Washroom] > 0 ||
+                    "ClassD" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[ClassD] > 0 ||
+                    "WadingPool" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[WadingPool] > 0 ||
+                    "Fieldhouse" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[Fieldhouse] > 0 ||
+                    "ParkingLot" IN VALUES(dim_amenity_slicer[Amenity]) && dim_park_amenities_wide[ParkingLot] > 0
+                ) &&
+                dim_park_amenities_wide[PlaceID] IN VALUES(fact_popular_times[PlaceID])
+            )
+        )
+    )
+
+VAR MaxRow =
+    TOPN(1, FilteredTable, [AvgOcc], DESC)
+
+VAR MaxHour = MAXX(MaxRow, fact_popular_times[Hour])
+VAR MaxPercent = MAXX(MaxRow, [AvgOcc])
+VAR HourFormatted = FORMAT(TIME(MaxHour, 0, 0), "h AM/PM")
+
+RETURN
+FORMAT(COALESCE(MaxPercent, 0), "0") & "% at " & HourFormatted

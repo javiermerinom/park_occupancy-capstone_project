@@ -1,0 +1,86 @@
+Estimated Users ParkView = 
+VAR IsHourSelected = HASONEVALUE('dim_hour'[HourKey])
+
+-- Get selected hour key (if any)
+VAR SelectedHour =
+    IF(IsHourSelected, SELECTEDVALUE('dim_hour'[HourKey]))
+
+-- Table with Hourly MAE
+VAR HourlyMAETable =
+    ADDCOLUMNS(
+        'user_estimates',
+        "HourlyMAE", DIVIDE([UpperBound] - [LowerBound], 2)
+    )
+
+-- Hour-level values if filtered to 1 hour
+VAR PredictedForHour =
+    CALCULATE(
+        SUM('user_estimates'[PredictedUsers]),
+        'dim_hour'[HourKey] = SelectedHour
+    )
+
+VAR MAEForHour =
+    CALCULATE(
+        SUMX(HourlyMAETable, [HourlyMAE]),
+        'dim_hour'[HourKey] = SelectedHour
+    )
+
+VAR RelativeErrorForHour =
+    IF(
+        NOT ISBLANK(PredictedForHour) && PredictedForHour > 0,
+        MAEForHour / PredictedForHour,
+        BLANK()
+    )
+
+-- Format for 1 hour selected
+VAR SumFormatted_Hour =
+    FORMAT(PredictedForHour, "0")
+
+VAR MAEFormatted_Hour =
+    FORMAT(MAEForHour, "0")
+
+VAR PctFormatted_Hour =
+    IF(
+        NOT ISBLANK(RelativeErrorForHour),
+        "(" & FORMAT(RelativeErrorForHour, "0%") & ")",
+        ""
+    )
+
+VAR Warning_Hour =
+    IF(RelativeErrorForHour > 0.5, " ⚠️", "")
+
+-- --- Fallback to overall sum if no specific hour selected ---
+
+VAR SumPredicted =
+    SUM('user_estimates'[PredictedUsers])
+
+VAR TotalMAE =
+    SUMX(HourlyMAETable, [HourlyMAE])
+
+VAR RelativeErrorPct =
+    IF(SumPredicted > 0, TotalMAE / SumPredicted)
+
+VAR SumFormatted =
+    IF(
+        SumPredicted >= 1000,
+        FORMAT(INT(SumPredicted / 1000), "0") & "k",
+        FORMAT(SumPredicted, "0")
+    )
+
+VAR MAEFormatted =
+    IF(
+        TotalMAE >= 1000,
+        FORMAT(INT(TotalMAE / 1000), "0") & "k",
+        FORMAT(TotalMAE, "0")
+    )
+
+VAR Warning =
+    IF(RelativeErrorPct > 0.5, " ⚠️", "")
+
+-- Final Return
+RETURN
+    IF(
+        IsHourSelected,
+        SumFormatted_Hour & " ± " & MAEFormatted_Hour & Warning_Hour,
+        SumFormatted & " ± " & MAEFormatted & " " & Warning
+    )

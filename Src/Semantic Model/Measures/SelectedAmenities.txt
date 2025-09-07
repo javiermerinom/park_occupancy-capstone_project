@@ -1,0 +1,11 @@
+SelectedAmenities = 
+IF(
+    ISFILTERED(dim_amenity_slicer[Amenity]),
+    CONCATENATEX(
+        VALUES(dim_amenity_slicer[Amenity]),
+        dim_amenity_slicer[Amenity],
+        ", "
+    ),
+    "All Amenities"
+)
+

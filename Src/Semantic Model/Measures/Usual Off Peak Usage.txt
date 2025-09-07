@@ -1,0 +1,15 @@
+Usual Off Peak Usage = 
+VAR SummaryTable =
+    SUMMARIZE(
+        KEEPFILTERS('fact_popular_times'),
+        'fact_popular_times'[Hour],
+        "AvgOcc", AVERAGE('fact_popular_times'[PopularTimesPercent])
+    )
+VAR MinHourRow =
+    TOPN(1, SummaryTable, [AvgOcc], ASC)
+VAR HourNumber = MAXX(MinHourRow, [Hour])
+VAR MinPercent = MAXX(MinHourRow, [AvgOcc])
+VAR HourFormatted = FORMAT(TIME(HourNumber, 0, 0), "h AM/PM")
+
+RETURN
+FORMAT(COALESCE(MinPercent, 0), "0") & "% at " & HourFormatted

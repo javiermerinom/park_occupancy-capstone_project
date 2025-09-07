@@ -1,0 +1,52 @@
+Parks With Events = 
+VAR IsDateFiltered =
+    ISFILTERED('dim_date'[Date]) ||
+    ISFILTERED('dim_date'[Year]) ||
+    ISFILTERED('dim_date'[MonthName]) ||
+    ISFILTERED('dim_date'[MonthAbbr]) ||
+    ISFILTERED('dim_date'[DayName])
+
+-- Get selected date range
+VAR MinDate = CALCULATE(MIN('dim_date'[Date]))
+VAR MaxDate = CALCULATE(MAX('dim_date'[Date]))
+
+-- Today's date
+VAR TodayDate = TODAY()
+
+VAR SelectedDates =
+    VALUES('dim_date'[Date])
+
+VAR CountSelected =
+    CALCULATE(
+        DISTINCTCOUNT('dim_events'[ParkName]),
+        TREATAS(VALUES('dim_park_attributes'[ParkName]), 'dim_events'[ParkName]),
+        FILTER (
+            'dim_events',
+            -- Include only events that intersect with ANY selected date
+            COUNTROWS(
+                INTERSECT (
+                    VALUES('dim_date'[Date]),
+                    CALENDAR('dim_events'[StartTime], 'dim_events'[EndTime])
+                )
+            ) > 0
+        )
+    )
+-- Count of parks with events today
+VAR CountToday =
+    CALCULATE(
+        DISTINCTCOUNT('dim_events'[ParkName]),
+        'dim_events'[StartTime] <= TodayDate &&
+        'dim_events'[EndTime] >= TodayDate,
+        TREATAS(VALUES('dim_park_attributes'[ParkName]), 'dim_events'[ParkName])
+    )
+
+-- Format results
+VAR FormattedToday = FORMAT(COALESCE(CountToday, 0), "0") & " (Today)"
+VAR FormattedSelected = FORMAT(COALESCE(CountSelected, 0), "0") & " (Selected Date)"
+
+RETURN
+    IF(
+        IsDateFiltered,
+        FormattedSelected,
+        FormattedToday
+    )
